@@ -22,8 +22,6 @@ const (
 
 func AnalyzeDynamdoDB() {
 
-	// OptimiseAnalyse(TABLES_PATH, COST_ANALYSIS_PATH)
-	// return
 	ctx := context.Background()
 	client := awsclient.NewAWSClient(awsclient.AWSClientOpts{
 		Region:        constants.US_WEST_2,
