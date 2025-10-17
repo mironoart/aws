@@ -79,7 +79,6 @@ func analyzeProvisionedTable(t *awsclient.TableInfo) {
 	rec := ""
 	needOptimisation := false
 	if utilization < 50 {
-		fmt.Printf("potentialSavings: $%.2f\n", potentialSavings)
 		rec = "⚠️ Consider switching to PAY_PER_REQUEST (utilization too low)"
 		needOptimisation = true
 	} else {
