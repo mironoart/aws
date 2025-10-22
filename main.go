@@ -1,7 +1,10 @@
 package main
 
-import "cost-optimisation/src/handlers/dynamodb"
+import (
+	"cost-optimisation/src/handlers/rds"
+)
 
 func main() {
-	dynamodb.AnalyzeDynamdoDB()
+	// dynamodb.AnalyzeDynamdoDB()
+	rds.AnalyzeRDS()
 }

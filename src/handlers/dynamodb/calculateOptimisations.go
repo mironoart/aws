@@ -2,13 +2,11 @@ package dynamodb
 
 import (
 	awsclient "cost-optimisation/src/aws"
-	"encoding/csv"
+	"cost-optimisation/src/storage"
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 	"sort"
-	"strconv"
 )
 
 func OptimiseAnalyse(dataPath string, outputPath string) {
@@ -43,7 +41,7 @@ func OptimiseAnalyse(dataPath string, outputPath string) {
 		panic(err)
 	}
 
-	WriteStructsToCSV(tables, outputPath+".csv")
+	storage.WriteToCSV(outputPath, tables)
 	fmt.Println("\n✅ Saved results to analysis.json")
 	print("TOTAL POTENTIAL SAVINGS: $", int(savingsSumm), "\n")
 }
@@ -101,75 +99,4 @@ func round(val float64, precision int) float64 {
 	var out float64
 	fmt.Sscanf(str, "%f", &out)
 	return out
-}
-
-func WriteStructsToCSV(data any, filePath string) error {
-	v := reflect.ValueOf(data)
-	if v.Kind() != reflect.Slice {
-		return fmt.Errorf("expected slice, got %T", data)
-	}
-
-	if v.Len() == 0 {
-		return fmt.Errorf("empty slice provided")
-	}
-
-	elemType := v.Index(0).Type()
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create CSV file: %w", err)
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	// --- HEADER ---
-	var headers []string
-	for i := 0; i < elemType.NumField(); i++ {
-		field := elemType.Field(i)
-		tag := field.Tag.Get("json")
-		if tag == "" {
-			headers = append(headers, field.Name)
-		} else {
-			headers = append(headers, tag)
-		}
-	}
-	if err := writer.Write(headers); err != nil {
-		return fmt.Errorf("failed to write header: %w", err)
-	}
-
-	// --- ROWS ---
-	for i := 0; i < v.Len(); i++ {
-		rowVal := v.Index(i)
-		var record []string
-		for j := 0; j < rowVal.NumField(); j++ {
-			field := rowVal.Field(j).Interface()
-			switch val := field.(type) {
-			case string:
-				record = append(record, val)
-			case *string:
-				if val != nil {
-					record = append(record, *val)
-				} else {
-					record = append(record, "")
-				}
-			case int64:
-				record = append(record, strconv.FormatInt(val, 10))
-			case float64:
-				record = append(record, strconv.FormatFloat(val, 'f', 2, 64))
-			case bool:
-				record = append(record, strconv.FormatBool(val))
-			default:
-				record = append(record, fmt.Sprintf("%v", val))
-			}
-		}
-
-		if err := writer.Write(record); err != nil {
-			return fmt.Errorf("failed to write row: %w", err)
-		}
-	}
-
-	fmt.Printf("✅ CSV file written successfully: %s\n", filePath)
-	return nil
 }
