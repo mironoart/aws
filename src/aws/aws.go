@@ -152,3 +152,32 @@ func (c *AWSClient) GetRDSInstances(ctx context.Context) []string {
 	log.Printf("Got RDS instances %d", len(allInstances))
 	return allInstances
 }
+
+func (c *AWSClient) GetCloudWatchMetrics(ctx context.Context, namespace string) ([]CloudWatchMetricInfo, error) {
+	input := &cloudwatch.ListMetricsInput{
+		Namespace: &namespace,
+	}
+
+	var metrics []CloudWatchMetricInfo
+	paginator := cloudwatch.NewListMetricsPaginator(c.CloudWatch, input)
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list metrics: %w", err)
+		}
+
+		for _, m := range page.Metrics {
+			info := CloudWatchMetricInfo{
+				Namespace:  *m.Namespace,
+				MetricName: *m.MetricName,
+			}
+			for _, d := range m.Dimensions {
+				info.Dimensions = append(info.Dimensions, fmt.Sprintf("%s=%s", *d.Name, *d.Value))
+			}
+			metrics = append(metrics, info)
+		}
+	}
+
+	return metrics, nil
+}
